@@ -10,8 +10,8 @@
 #define VIRT_SCREEN_WIDTH 500
 #define VIRT_SCREEN_HEIGHT 500
 
-#define PX_WIDTH (uint32_t)(REAL_SCREEN_WIDTH / VIRT_SCREEN_WIDTH)
-#define PX_HEIGHT (uint32_t)(REAL_SCREEN_HEIGHT / VIRT_SCREEN_HEIGHT)
+#define PX_WIDTH (int32_t)(REAL_SCREEN_WIDTH / VIRT_SCREEN_WIDTH)
+#define PX_HEIGHT (int32_t)(REAL_SCREEN_HEIGHT / VIRT_SCREEN_HEIGHT)
 
 typedef SDL_Surface S;
 
@@ -21,8 +21,8 @@ typedef enum {
 } CURR_TOOL;
 
 typedef struct {
-  uint32_t x;
-  uint32_t y;
+  int32_t x;
+  int32_t y;
   float sz;
 } P;
 
@@ -70,8 +70,8 @@ void initApp(A *app) {
 // paint pixel
 void pxp(S *s, uint64_t x, uint64_t y, uint8_t r, uint8_t g, uint8_t b,
          float sz) {
-  for (uint32_t dy = 0; dy < PX_HEIGHT * sz; ++dy) {
-    for (uint32_t dx = 0; dx < PX_WIDTH * sz; ++dx) {
+  for (int32_t dy = 0; dy < PX_HEIGHT * sz; ++dy) {
+    for (int32_t dx = 0; dx < PX_WIDTH * sz; ++dx) {
       *((int *)s->pixels + (x * PX_WIDTH + dx) + (y * PX_HEIGHT + dy) * s->w) =
           SDL_MapRGB(s->format, r, g, b);
     }
@@ -100,7 +100,7 @@ void d_l(S *s, P *p1, P *p2, uint8_t r, uint8_t g, uint8_t b, uint8_t sz) {
 
 // draw background
 void d_bg(S *s) {
-  memset((uint32_t *)s->pixels, 0, s->w * sizeof(uint32_t) * s->h);
+  memset((int32_t *)s->pixels, 0, s->w * sizeof(int32_t) * s->h);
   for (int x = 15; x < VIRT_SCREEN_WIDTH; x += 20) {
     for (int y = 15; y < VIRT_SCREEN_HEIGHT; y += 20) {
       upxp(s, x, y, 80, 80, 80);
@@ -163,6 +163,12 @@ void d_dl(S *s, P *p1, P *p2, uint8_t r, uint8_t g, uint8_t b) {
     P p = lerp(p1, p2, t);
     upxp(s, p.x, p.y, r, g, b);
   }
+}
+
+int32_t clamp(int32_t p, int32_t min, int32_t max) {
+  if (p > max) return max;
+  if (p < min) return min;
+  return p;
 }
 
 // draw curve
@@ -252,8 +258,8 @@ int main() {
       int cy = div(event.button.y, PX_HEIGHT).quot;
       if (app.t == ADD_POINT) {
         P *np = c_ap(&app.c);
-        np->x = cx;
-        np->y = cy;
+        np->x = clamp(cx, 0, VIRT_SCREEN_WIDTH);
+        np->y = clamp(cy, 0, VIRT_SCREEN_HEIGHT);
         np->sz = 4;
       }
     } else if (SDL_MOUSEBUTTONUP == event.type) {
@@ -276,8 +282,8 @@ int main() {
       int cy = div(event.button.y, PX_HEIGHT).quot;
 
       if (app.hover && app.t == MOVE_POINT) {
-        ((P *)app.hover)->x = cx;
-        ((P *)app.hover)->y = cy;
+        ((P *)app.hover)->x = clamp(cx, 0, VIRT_SCREEN_WIDTH);
+        ((P *)app.hover)->y = clamp(cy, 0, VIRT_SCREEN_HEIGHT);
       } else {
         app.hover = NULL;
         for (int i = 0; i < app.c.np; i++) {
@@ -289,8 +295,8 @@ int main() {
         }
       }
 
-      cur.x = cx;
-      cur.y = cy;
+      cur.x = clamp(cx, 0, VIRT_SCREEN_WIDTH);
+      cur.y = clamp(cy, 0, VIRT_SCREEN_HEIGHT);
     }
 
     if (SDL_MUSTLOCK(surf)) {
